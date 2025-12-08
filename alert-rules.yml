@@ -1,0 +1,194 @@
+groups:
+  # ===========================================
+  # HOST RESOURCE ALERTS
+  # ===========================================
+  - name: host_resources
+    interval: 30s
+    rules:
+      # High CPU usage alert
+      - alert: HighCpuUsage
+        expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+          category: host
+        annotations:
+          summary: "High CPU usage on {{ $labels.instance }}"
+          description: "CPU usage is {{ $value | humanize }}% on {{ $labels.instance }}"
+      
+      # Critical CPU usage alert
+      - alert: CriticalCpuUsage
+        expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 95
+        for: 2m
+        labels:
+          severity: critical
+          category: host
+        annotations:
+          summary: "Critical CPU usage on {{ $labels.instance }}"
+          description: "CPU usage is {{ $value | humanize }}% on {{ $labels.instance }}"
+      
+      # High memory usage alert
+      - alert: HighMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          category: host
+        annotations:
+          summary: "High memory usage on {{ $labels.instance }}"
+          description: "Memory usage is {{ $value | humanize }}% on {{ $labels.instance }}"
+      
+      # Critical memory usage alert
+      - alert: CriticalMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 95
+        for: 2m
+        labels:
+          severity: critical
+          category: host
+        annotations:
+          summary: "Critical memory usage on {{ $labels.instance }}"
+          description: "Memory usage is {{ $value | humanize }}% on {{ $labels.instance }}"
+      
+      # High disk space usage alert
+      - alert: HighDiskUsage
+        expr: (1 - (node_filesystem_avail_bytes{fstype!="tmpfs",fstype!="overlay"} / node_filesystem_size_bytes{fstype!="tmpfs",fstype!="overlay"})) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          category: host
+        annotations:
+          summary: "High disk usage on {{ $labels.instance }}"
+          description: "Disk usage is {{ $value | humanize }}% on {{ $labels.instance }} ({{ $labels.mountpoint }})"
+      
+      # Critical disk space usage alert
+      - alert: CriticalDiskUsage
+        expr: (1 - (node_filesystem_avail_bytes{fstype!="tmpfs",fstype!="overlay"} / node_filesystem_size_bytes{fstype!="tmpfs",fstype!="overlay"})) * 100 > 95
+        for: 2m
+        labels:
+          severity: critical
+          category: host
+        annotations:
+          summary: "Critical disk usage on {{ $labels.instance }}"
+          description: "Disk usage is {{ $value | humanize }}% on {{ $labels.instance }} ({{ $labels.mountpoint }})"
+      
+      # High inode usage alert
+      - alert: HighInodeUsage
+        expr: (1 - (node_filesystem_files_free{fstype!="tmpfs",fstype!="overlay"} / node_filesystem_files{fstype!="tmpfs",fstype!="overlay"})) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          category: host
+        annotations:
+          summary: "High inode usage on {{ $labels.instance }}"
+          description: "Inode usage is {{ $value | humanize }}% on {{ $labels.instance }} ({{ $labels.mountpoint }})"
+      
+      # Disk will fill in 24 hours prediction
+      - alert: DiskWillFillIn24Hours
+        expr: predict_linear(node_filesystem_avail_bytes{fstype!="tmpfs",fstype!="overlay"}[1h], 24 * 3600) < 0
+        for: 5m
+        labels:
+          severity: warning
+          category: host
+        annotations:
+          summary: "Disk will fill in 24 hours on {{ $labels.instance }}"
+          description: "Disk {{ $labels.mountpoint }} on {{ $labels.instance }} is predicted to fill within 24 hours"
+
+  # ===========================================
+  # DOCKER CONTAINER ALERTS
+  # ===========================================
+  - name: docker_containers
+    interval: 30s
+    rules:
+      # Container down alert
+      - alert: ContainerDown
+        expr: time() - container_last_seen{name!=""} > 60
+        for: 1m
+        labels:
+          severity: critical
+          category: container
+        annotations:
+          summary: "Container {{ $labels.name }} is down"
+          description: "Container {{ $labels.name }} on {{ $labels.instance }} has been down for more than 1 minute"
+      
+      # Container restarting frequently
+      - alert: ContainerRestartingFrequently
+        expr: rate(container_last_seen{name!=""}[15m]) > 0.016
+        for: 5m
+        labels:
+          severity: warning
+          category: container
+        annotations:
+          summary: "Container {{ $labels.name }} is restarting frequently"
+          description: "Container {{ $labels.name }} on {{ $labels.instance }} has restarted more than 5 times in 15 minutes"
+      
+      # High container CPU usage
+      - alert: ContainerHighCpu
+        expr: (sum by (name, instance) (rate(container_cpu_usage_seconds_total{name!=""}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+          category: container
+        annotations:
+          summary: "High CPU usage in container {{ $labels.name }}"
+          description: "Container {{ $labels.name }} on {{ $labels.instance }} is using {{ $value | humanize }}% CPU"
+      
+      # High container memory usage
+      - alert: ContainerHighMemory
+        expr: (container_memory_usage_bytes{name!=""} / container_spec_memory_limit_bytes{name!=""} * 100) > 85
+        for: 5m
+        labels:
+          severity: warning
+          category: container
+        annotations:
+          summary: "High memory usage in container {{ $labels.name }}"
+          description: "Container {{ $labels.name }} on {{ $labels.instance }} is using {{ $value | humanize }}% of its memory limit"
+      
+      # Container memory limit reached
+      - alert: ContainerMemoryLimitReached
+        expr: (container_memory_usage_bytes{name!=""} / container_spec_memory_limit_bytes{name!=""} * 100) > 95
+        for: 2m
+        labels:
+          severity: critical
+          category: container
+        annotations:
+          summary: "Container {{ $labels.name }} memory limit nearly reached"
+          description: "Container {{ $labels.name }} on {{ $labels.instance }} is using {{ $value | humanize }}% of its memory limit"
+
+  # ===========================================
+  # MONITORING STACK HEALTH
+  # ===========================================
+  - name: monitoring_health
+    interval: 30s
+    rules:
+      # Prometheus target down
+      - alert: PrometheusTargetDown
+        expr: up == 0
+        for: 2m
+        labels:
+          severity: warning
+          category: monitoring
+        annotations:
+          summary: "Prometheus target {{ $labels.job }} is down"
+          description: "Target {{ $labels.job }} on {{ $labels.instance }} has been down for more than 2 minutes"
+      
+      # Too many failed scrapes
+      - alert: PrometheusTooManyFailedScrapes
+        expr: increase(prometheus_target_scrapes_exceeded_sample_limit_total[5m]) > 0
+        for: 2m
+        labels:
+          severity: warning
+          category: monitoring
+        annotations:
+          summary: "Prometheus is having trouble scraping targets"
+          description: "Prometheus has failed {{ $value }} scrapes in the last 5 minutes"
+      
+      # Prometheus configuration reload failed
+      - alert: PrometheusConfigReloadFailed
+        expr: prometheus_config_last_reload_successful == 0
+        for: 1m
+        labels:
+          severity: critical
+          category: monitoring
+        annotations:
+          summary: "Prometheus configuration reload failed"
+          description: "Prometheus configuration reload has failed on {{ $labels.instance }}"
