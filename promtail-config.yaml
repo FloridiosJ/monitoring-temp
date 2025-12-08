@@ -1,0 +1,32 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  - job_name: docker
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: docker-logs
+          __path__: /var/lib/docker/containers/*/*.log
+    pipeline_stages:
+      - docker: {}
+      - regex:
+          expression: '/var/lib/docker/containers/(?P<container_id>[^/]+)/(?P<filename>[^/]+)'
+      - labeldrop:
+          - filename
+      - match:
+          selector: '{job="docker-logs"}'
+          stages:
+            - replace:
+                expression: '(?P<name>[a-zA-Z0-9-_]+)-[0-9a-f]{12}\.log'
+                source: filename
+                replace: '${name}'
+                target: container_name
