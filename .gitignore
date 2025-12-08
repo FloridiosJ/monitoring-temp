@@ -1,0 +1,33 @@
+# Environment variables (contains sensitive data)
+.env
+
+# Docker volumes data
+db/
+grafana-storage/
+loki-storage/
+prometheus-data/
+alertmanager-data/
+
+# Logs
+*.log
+logs/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Backup files
+*.bak
+*.backup
