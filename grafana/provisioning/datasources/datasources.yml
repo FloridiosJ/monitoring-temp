@@ -10,7 +10,7 @@ datasources:
     jsonData:
       timeInterval: 15s
       httpMethod: POST
-    editable: true
+    editable: false
 
   # Loki datasource for logs
   - name: Loki
@@ -19,7 +19,7 @@ datasources:
     url: http://loki:3100
     jsonData:
       maxLines: 1000
-    editable: true
+    editable: false
 
   # Alertmanager datasource
   - name: Alertmanager
@@ -28,4 +28,4 @@ datasources:
     url: http://alertmanager:9093
     jsonData:
       implementation: prometheus
-    editable: true
+    editable: false

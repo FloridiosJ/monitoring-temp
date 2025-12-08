@@ -473,6 +473,15 @@ docker exec prometheus wget -O- http://cadvisor:8080/metrics
 
 ### Grafana ne démarre pas
 
+**⚠️ Note:** Si vous rencontrez des erreurs "Database locked", des répertoires de provisioning manquants, ou des erreurs de plugin, consultez le guide complet de dépannage : [GRAFANA_FIX.md](GRAFANA_FIX.md)
+
+**Solution rapide :**
+```bash
+# Utiliser le script de correction automatique
+./fix-grafana.sh
+```
+
+**Solution manuelle :**
 ```bash
 # Vérifier les logs
 docker logs grafana
@@ -482,7 +491,7 @@ docker exec grafana ls -la /var/lib/grafana
 
 # Recréer le volume si nécessaire
 docker-compose -f compose.monitoring.yaml down
-docker volume rm grafana-storage
+docker volume rm monitoring-temp_grafana-storage
 docker-compose -f compose.monitoring.yaml up -d
 ```
 
