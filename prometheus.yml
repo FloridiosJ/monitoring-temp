@@ -34,7 +34,7 @@ scrape_configs:
       - targets: ['cadvisor:8080']
         labels:
           service: 'cadvisor'
-  
+
   - job_name: 'alertmanager'
     static_configs:
       - targets: ['alertmanager:9093']
