@@ -54,7 +54,7 @@ services:
       - GF_SMTP_FROM_ADDRESS=${SMTP_FROM_ADDRESS}
       - GF_SMTP_FROM_NAME=${SMTP_FROM_NAME:-Grafana Alerts}
       - GF_SERVER_ROOT_URL=https://${GRAFANA_DOMAIN:-localhost}
-      - GF_INSTALL_PLUGINS=grafana-piechart-panel
+      - GF_DATABASE_WAL=true
     labels:
       - traefik.enable=${USE_TRAEFIK:-false}
       - traefik.http.routers.grafana.rule=Host(`${GRAFANA_DOMAIN}`)
