@@ -230,7 +230,7 @@ If you have an existing Grafana deployment with custom configurations:
 Simply clone the repository and start the stack:
 
 ```bash
-git clone https://github.com/FloridiosJ/monitoring-temp.git
+git clone <your-repository-url>
 cd monitoring-temp
 cp .env.example .env
 # Edit .env with your settings
