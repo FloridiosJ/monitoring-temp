@@ -1,0 +1,96 @@
+services:
+  waat-home:
+    image: registry.gitlab.com/digitallforyou/waat/prod/web:prod
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.waat-home.service=waat-home
+      - traefik.http.routers.waat-home.rule=Host(`waathome.fr`)
+      - traefik.http.routers.waat-home.tls=true
+      - traefik.http.routers.waat-home.tls.certresolver=lets-encrypt
+      - traefik.http.services.waat-home.loadbalancer.server.port=3000
+      - "traefik.http.middlewares.cgv-redirect.redirectregex.regex=^https://waathome.fr/cgv-waat/(.*)"
+      - "traefik.http.middlewares.cgv-redirect.redirectregex.replacement=https://waat.fr/cgv-borne/$${1}"
+      - "traefik.http.middlewares.cgv-redirect.redirectregex.permanent=true"
+      - "traefik.http.routers.waat-home.middlewares=cgv-redirect@docker"
+
+      - traefik.http.routers.www-waat-home.service=www-waat-home
+      - traefik.http.routers.www-waat-home.rule=Host(`www.waathome.fr`)
+      - traefik.http.routers.www-waat-home.tls=true
+      - traefik.http.routers.www-waat-home.tls.certresolver=lets-encrypt
+      - traefik.http.services.www-waat-home.loadbalancer.server.port=3000
+    environment:
+      - NODE_OPTIONS=--max-old-space-size=4096
+    networks:
+      - waat
+
+  waat-admin:
+    image: registry.gitlab.com/digitallforyou/waat/prod/bo:prod
+    labels:
+      - traefik.enable=true
+      - traefik.port=3000
+      - traefik.http.routers.waat-admin.rule=Host(`administration.waathome.fr`)
+      - traefik.http.routers.waat-admin.tls=true
+      - traefik.http.routers.waat-admin.tls.certresolver=lets-encrypt
+      - traefik.http.services.waat-admin.loadbalancer.server.port=3000
+    environment:
+      - NODE_OPTIONS=--max-old-space-size=4096
+    networks:
+      - waat 
+  db:
+    image: postgres:16-bullseye
+    volumes:
+      - ./db/data:/var/lib/postgresql/data
+      - ./conf/postgresql.conf:/etc/postgresql/postgresql.conf
+    environment:
+      POSTGRES_USER: ${DATABASE_USERNAME}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+      POSTGRES_DB: ${DATABASE_NAME}
+    command: ["postgres", "-c", "config_file=/etc/postgresql/postgresql.conf"]
+    networks:
+      - waat
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    labels:
+      - traefik.enable=true
+      - traefik.port=80
+      - traefik.http.routers.waat-pgadmin.rule=Host(`db.waathome.fr`)
+      - traefik.http.routers.waat-pgadmin.tls=true
+      - traefik.http.routers.waat-pgadmin.tls.certresolver=lets-encrypt
+      - traefik.http.routers.waat-pgadmin.middlewares=pgadmin-auth
+      - "traefik.http.middlewares.pgadmin-auth.basicauth.users=admin:$$2y$$05$$oanhTYk6soyAwlIr2NsxG.7irIRrcsvGWWAipoPpih0PepAfJoW5O"
+      - "traefik.http.middlewares.pgadmin-auth.basicauth.removeheader=false"
+    env_file:
+      - .env
+    networks:
+      - waat
+
+  redis:
+    image: redis:latest
+    restart: unless-stopped
+    command: redis-server --appendonly yes --replica-read-only no
+    networks:
+      - waat
+  server:
+    image: registry.gitlab.com/digitallforyou/waat/prod/server:prod
+    depends_on:
+      - db
+      - redis
+    labels:
+      - traefik.enable=true
+      - traefik.port=3000
+      - traefik.http.routers.waat-server.rule=Host(`api.waathome.fr`)
+      - traefik.http.routers.waat-server.tls=true
+      - traefik.http.routers.waat-server.tls.certresolver=lets-encrypt
+      - traefik.http.services.waat-server.loadbalancer.server.port=3000
+    env_file:
+      - .env
+    environment:
+      - NODE_OPTIONS=--max-old-space-size=8192
+    networks:
+      - waat
+
+networks:
+  waat:
+    external:
+      name: traefik_waat
