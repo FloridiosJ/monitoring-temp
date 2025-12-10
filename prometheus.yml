@@ -1,42 +1,38 @@
 global:
   scrape_interval: 15s
   evaluation_interval: 15s
-  external_labels:
-    cluster: '${SERVER_NAME:-monitoring-cluster}'
-    environment: '${ENVIRONMENT:-production}'
+  external_labels: 
+    cluster: 'monitoring-server'
+    environment: 'production'
 
-# Alertmanager configuration
-alerting:
-  alertmanagers:
-    - static_configs:
-        - targets:
-            - alertmanager:9093
-
-# Load alert rules
+# Charger les règles d'alertes
 rule_files:
   - /etc/prometheus/alert-rules.yml
 
+# Configuration Alertmanager
+alerting:
+  alertmanagers: 
+    - static_configs:
+        - targets: 
+            - alertmanager:9093
+
 scrape_configs:
+  # Prometheus lui-même
   - job_name: 'prometheus'
     static_configs:
-      - targets: ['prometheus:9090']
-        labels:
-          service: 'prometheus'
+      - targets:  ['prometheus:9090']
 
+  # Node Exporter (métriques système)
   - job_name: 'node-exporter'
     static_configs:
       - targets: ['node-exporter:9100']
-        labels:
-          service: 'node-exporter'
 
+  # cAdvisor (métriques containers)
   - job_name: 'cadvisor'
     static_configs:
       - targets: ['cadvisor:8080']
-        labels:
-          service: 'cadvisor'
 
-  - job_name: 'alertmanager'
+  # Grafana
+  - job_name:  'grafana'
     static_configs:
-      - targets: ['alertmanager:9093']
-        labels:
-          service: 'alertmanager'
+      - targets:  ['grafana:3000']

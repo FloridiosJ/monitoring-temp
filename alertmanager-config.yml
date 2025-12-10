@@ -1,203 +1,85 @@
 global:
-  # SMTP configuration for email notifications
-  smtp_smarthost: '${SMTP_HOST}'
-  smtp_from: '${SMTP_FROM_ADDRESS}'
-  smtp_auth_username: '${SMTP_USER}'
-  smtp_auth_password: '${SMTP_PASSWORD}'
+  smtp_smarthost: 'smtp.gmail.com:587'
+  smtp_from: 'monitoring. hrt@gmail.com'
+  smtp_auth_username: 'monitoring.hrt@gmail. com'
+  smtp_auth_password: 'arlu jgzi srng zpkj'
   smtp_require_tls: true
 
-# The root route with all parameters, which are inherited by the child
-# routes if they are not overwritten.
 route:
   receiver: 'email-alerts'
-  group_by: ['alertname', 'cluster', 'service', 'severity']
+  group_by: ['alertname', 'severity']
   group_wait: 30s
   group_interval: 5m
-  repeat_interval: 4h
+  repeat_interval:  4h
   
   routes:
-    # Critical alerts - send immediately
-    - match:
+    - match: 
         severity: critical
       receiver: 'email-critical'
       group_wait: 10s
       repeat_interval: 1h
     
-    # Warning alerts - grouped and sent less frequently
     - match:
-        severity: warning
+        severity:  warning
       receiver: 'email-alerts'
       group_wait: 30s
       repeat_interval: 4h
     
-    # Monitoring stack health alerts
     - match:
         category: monitoring
       receiver: 'email-monitoring'
-      group_wait: 15s
+      group_wait:  15s
       repeat_interval: 2h
 
 receivers:
-  # Default email receiver for alerts
   - name: 'email-alerts'
     email_configs:
-      - to: '${ALERT_EMAIL_TO}'
+      - to:  'monitoring.hrt@gmail. com'  # ← Remplacez par votre email
         send_resolved: true
         headers:
-          Subject: '⚠️ [{{ .GroupLabels.severity | toUpper }}] {{ .GroupLabels.alertname }} on {{ .GroupLabels.instance }}'
-        html: |
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <style>
-              body { font-family: Arial, sans-serif; }
-              .alert { border-left: 4px solid #ffa500; padding: 15px; margin: 10px 0; background-color: #fff3cd; }
-              .critical { border-left-color: #dc3545; background-color: #f8d7da; }
-              .resolved { border-left-color: #28a745; background-color: #d4edda; }
-              .label { display: inline-block; padding: 3px 8px; margin: 2px; background-color: #e0e0e0; border-radius: 3px; font-size: 12px; }
-              h2 { color: #333; }
-              .footer { margin-top: 20px; padding-top: 10px; border-top: 1px solid #ddd; font-size: 12px; color: #666; }
-            </style>
-          </head>
-          <body>
-            <h2>🔔 Monitoring Alert</h2>
-            {{ range .Alerts }}
-            <div class="alert {{ if eq .Status "resolved" }}resolved{{ else if eq .Labels.severity "critical" }}critical{{ end }}">
-              <h3>{{ .Labels.alertname }}</h3>
-              <p><strong>Status:</strong> {{ .Status | toUpper }}</p>
-              <p><strong>Severity:</strong> {{ .Labels.severity | toUpper }}</p>
-              <p><strong>Instance:</strong> {{ .Labels.instance }}</p>
-              {{ if .Labels.name }}
-              <p><strong>Container:</strong> {{ .Labels.name }}</p>
-              {{ end }}
-              <p><strong>Summary:</strong> {{ .Annotations.summary }}</p>
-              <p><strong>Description:</strong> {{ .Annotations.description }}</p>
-              <p><strong>Started at:</strong> {{ .StartsAt.Format "2006-01-02 15:04:05 MST" }}</p>
-              {{ if eq .Status "resolved" }}
-              <p><strong>Resolved at:</strong> {{ .EndsAt.Format "2006-01-02 15:04:05 MST" }}</p>
-              {{ end }}
-              <div>
-                <strong>Labels:</strong><br>
-                {{ range .Labels.SortedPairs }}
-                <span class="label">{{ .Name }}: {{ .Value }}</span>
-                {{ end }}
-              </div>
-            </div>
-            {{ end }}
-            <div class="footer">
-              <p>Server: ${SERVER_NAME} | Environment: ${ENVIRONMENT}</p>
-              <p>This is an automated alert from your monitoring system.</p>
-            </div>
-          </body>
-          </html>
+          Subject: '⚠️ [{{ . GroupLabels.severity | toUpper }}] {{ .GroupLabels.alertname }}'
+        html:  |
+          <h2>🔔 Alert Notification</h2>
+          {{ range . Alerts }}
+          <div style="border-left: 4px solid #ffa500; padding: 10px; margin: 10px 0;">
+            <h3>{{ .Labels.alertname }}</h3>
+            <p><strong>Status:</strong> {{ .Status }}</p>
+            <p><strong>Severity:</strong> {{ .Labels.severity }}</p>
+            <p><strong>Summary:</strong> {{ .Annotations. summary }}</p>
+            <p><strong>Description:</strong> {{ .Annotations.description }}</p>
+            <p><strong>Time:</strong> {{ .StartsAt. Format "2006-01-02 15:04:05" }}</p>
+          </div>
+          {{ end }}
   
-  # Critical alerts receiver - immediate notification
   - name: 'email-critical'
-    email_configs:
-      - to: '${ALERT_EMAIL_TO}'
+    email_configs: 
+      - to: 'monitoring.hrt@gmail.com'  # ← Remplacez par votre email
         send_resolved: true
         headers:
-          Subject: '🚨 [CRITICAL] {{ .GroupLabels.alertname }} on {{ .GroupLabels.instance }}'
+          Subject: '🚨 [CRITICAL] {{ .GroupLabels. alertname }}'
         html: |
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <style>
-              body { font-family: Arial, sans-serif; }
-              .alert { border-left: 4px solid #dc3545; padding: 15px; margin: 10px 0; background-color: #f8d7da; }
-              .resolved { border-left-color: #28a745; background-color: #d4edda; }
-              .label { display: inline-block; padding: 3px 8px; margin: 2px; background-color: #e0e0e0; border-radius: 3px; font-size: 12px; }
-              h2 { color: #dc3545; }
-              .footer { margin-top: 20px; padding-top: 10px; border-top: 1px solid #ddd; font-size: 12px; color: #666; }
-            </style>
-          </head>
-          <body>
-            <h2>🚨 CRITICAL ALERT</h2>
-            <p style="color: #dc3545; font-weight: bold;">Immediate attention required!</p>
-            {{ range .Alerts }}
-            <div class="alert {{ if eq .Status "resolved" }}resolved{{ end }}">
-              <h3>{{ .Labels.alertname }}</h3>
-              <p><strong>Status:</strong> {{ .Status | toUpper }}</p>
-              <p><strong>Instance:</strong> {{ .Labels.instance }}</p>
-              {{ if .Labels.name }}
-              <p><strong>Container:</strong> {{ .Labels.name }}</p>
-              {{ end }}
-              <p><strong>Summary:</strong> {{ .Annotations.summary }}</p>
-              <p><strong>Description:</strong> {{ .Annotations.description }}</p>
-              <p><strong>Started at:</strong> {{ .StartsAt.Format "2006-01-02 15:04:05 MST" }}</p>
-              {{ if eq .Status "resolved" }}
-              <p><strong>Resolved at:</strong> {{ .EndsAt.Format "2006-01-02 15:04:05 MST" }}</p>
-              {{ end }}
-              <div>
-                <strong>Labels:</strong><br>
-                {{ range .Labels.SortedPairs }}
-                <span class="label">{{ .Name }}: {{ .Value }}</span>
-                {{ end }}
-              </div>
-            </div>
-            {{ end }}
-            <div class="footer">
-              <p>Server: ${SERVER_NAME} | Environment: ${ENVIRONMENT}</p>
-              <p>This is a CRITICAL automated alert requiring immediate action.</p>
-            </div>
-          </body>
-          </html>
+          <h2 style="color: #dc3545;">🚨 CRITICAL ALERT</h2>
+          <p style="color: #dc3545; font-weight: bold;">Immediate attention required!</p>
+          {{ range .Alerts }}
+          <div style="border-left: 4px solid #dc3545; padding: 10px; margin:  10px 0; background-color: #f8d7da;">
+            <h3>{{ . Labels.alertname }}</h3>
+            <p><strong>Status:</strong> {{ .Status }}</p>
+            <p><strong>Summary:</strong> {{ .Annotations. summary }}</p>
+            <p><strong>Description:</strong> {{ .Annotations.description }}</p>
+            <p><strong>Time:</strong> {{ .StartsAt.Format "2006-01-02 15:04:05" }}</p>
+          </div>
+          {{ end }}
   
-  # Monitoring stack health receiver
   - name: 'email-monitoring'
     email_configs:
-      - to: '${ALERT_EMAIL_TO}'
+      - to: 'monitoring.hrt@gmail.com'  # ← Remplacez par votre email
         send_resolved: true
-        headers:
-          Subject: '🔧 [MONITORING] {{ .GroupLabels.alertname }}'
-        html: |
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <style>
-              body { font-family: Arial, sans-serif; }
-              .alert { border-left: 4px solid #007bff; padding: 15px; margin: 10px 0; background-color: #cfe2ff; }
-              .resolved { border-left-color: #28a745; background-color: #d4edda; }
-              .label { display: inline-block; padding: 3px 8px; margin: 2px; background-color: #e0e0e0; border-radius: 3px; font-size: 12px; }
-              h2 { color: #007bff; }
-              .footer { margin-top: 20px; padding-top: 10px; border-top: 1px solid #ddd; font-size: 12px; color: #666; }
-            </style>
-          </head>
-          <body>
-            <h2>🔧 Monitoring System Alert</h2>
-            {{ range .Alerts }}
-            <div class="alert {{ if eq .Status "resolved" }}resolved{{ end }}">
-              <h3>{{ .Labels.alertname }}</h3>
-              <p><strong>Status:</strong> {{ .Status | toUpper }}</p>
-              <p><strong>Job:</strong> {{ .Labels.job }}</p>
-              <p><strong>Instance:</strong> {{ .Labels.instance }}</p>
-              <p><strong>Summary:</strong> {{ .Annotations.summary }}</p>
-              <p><strong>Description:</strong> {{ .Annotations.description }}</p>
-              <p><strong>Started at:</strong> {{ .StartsAt.Format "2006-01-02 15:04:05 MST" }}</p>
-              {{ if eq .Status "resolved" }}
-              <p><strong>Resolved at:</strong> {{ .EndsAt.Format "2006-01-02 15:04:05 MST" }}</p>
-              {{ end }}
-            </div>
-            {{ end }}
-            <div class="footer">
-              <p>Server: ${SERVER_NAME} | Environment: ${ENVIRONMENT}</p>
-              <p>The monitoring system itself requires attention.</p>
-            </div>
-          </body>
-          </html>
+        headers: 
+          Subject: '🔧 [MONITORING] {{ .GroupLabels. alertname }}'
 
-# Inhibition rules allow to mute a set of alerts given that another alert is firing.
 inhibit_rules:
-  # Inhibit warning if critical is firing for same alert
   - source_match:
-      severity: 'critical'
+      severity:  'critical'
     target_match:
       severity: 'warning'
     equal: ['alertname', 'instance']
-  
-  # Inhibit container alerts if host is down
-  - source_match:
-      alertname: 'PrometheusTargetDown'
-    target_match_re:
-      category: 'container'
-    equal: ['instance']
