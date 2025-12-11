@@ -251,38 +251,64 @@ docker run --rm -it progrium/stress --cpu 8 --timeout 360s
 
 ## 📊 Dashboards Grafana
 
-### Dashboard principal : "Docker Server Monitoring - Complete"
+### Dashboards disponibles
 
-Le dashboard pré-configuré inclut :
+#### 1. "Docker Server Monitoring - Complete"
+Dashboard principal pour le monitoring des ressources système et containers.
 
-#### Vue d'ensemble (Row 1)
-- 📊 Gauges : CPU, Mémoire, Disque, Nombre de containers
+**Contenu :**
+- **Vue d'ensemble** : Gauges CPU, Mémoire, Disque, Nombre de containers
+- **CPU & Load** : Utilisation CPU par mode, Load average (1m, 5m, 15m)
+- **Memory** : Détails mémoire (Used, Buffers, Cached, Free)
+- **Disk** : Utilisation par point de montage, I/O disque
+- **Network** : Trafic réseau par interface
+- **Docker Containers** : CPU, mémoire, réseau par container, table d'état
 
-#### CPU & Load (Row 2)
-- Utilisation CPU par mode (user, system, idle, etc.)
-- Load average (1m, 5m, 15m)
+#### 2. "Docker Logs - Loki Monitoring" ⭐ NOUVEAU
+Dashboard dédié à la visualisation des logs Docker via Loki.
 
-#### Memory (Row 3)
-- Détails mémoire (Used, Buffers, Cached, Free)
+**Contenu :**
+- **Overview** : Métriques clés (containers actifs, CPU, RAM, total de logs)
+- **Logs globaux** : Tous les logs des containers en temps réel
+- **Logs filtrés** : Logs par container sélectionné (variable `$container`)
+- **Erreurs & Warnings** : 
+  - Logs d'erreurs (error|fail|exception)
+  - Logs d'avertissements (warn|warning)
+- **Analyse des taux** :
+  - Taux de logs par container (logs/min)
+  - Taux d'erreurs par container (erreurs/min)
+- **Métriques contextuelles** : CPU et mémoire par container
+- **Logs spécifiques** : Panels dédiés pour Prometheus, Grafana, Loki, Alertmanager, cAdvisor, Promtail
 
-#### Disk (Row 4)
-- Utilisation par point de montage
-- I/O disque (lecture/écriture)
+**Fonctionnalités :**
+- 🔍 Filtre dynamique par container(s) via variable Grafana
+- 📊 Visualisation en temps réel des logs
+- 🚨 Détection automatique des erreurs et warnings
+- 📈 Graphiques de tendance du volume de logs
+- 🎯 Requêtes LogQL optimisées
 
-#### Network (Row 5)
-- Trafic réseau par interface
+**Requêtes LogQL utilisées :**
+```logql
+# Tous les logs
+{container_name=~".+"}
 
-#### Docker Containers (Row 6)
-- CPU par container
-- Mémoire par container
-- Trafic réseau par container
-- Table d'état des containers
+# Logs filtrés par container
+{container_name=~"$container"}
+
+# Erreurs
+{container_name=~"$container"} |~ "(?i)(error|fail|exception)"
+
+# Taux de logs par container
+sum by (container_name) (count_over_time({container_name=~"$container"}[1m]))
+```
 
 ### Accéder aux dashboards
 
 1. Connectez-vous à Grafana : `http://votre-serveur:3000`
 2. Allez dans **Dashboards** (menu latéral)
-3. Ouvrez "Docker Server Monitoring - Complete"
+3. Sélectionnez le dashboard souhaité :
+   - "Docker Server Monitoring - Complete" pour les métriques
+   - "Docker Logs - Loki Monitoring" pour les logs
 
 ### Créer vos propres dashboards
 
