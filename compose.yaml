@@ -14,7 +14,7 @@ services:
       - ./alert-rules.yml:/etc/prometheus/alert-rules.yml
       - prometheus-data:/prometheus
     environment:
-      - SERVER_NAME=${SERVER_NAME:-monitoring-server}
+      - SERVER_NAME=monitoring-server
       - ENVIRONMENT=developement
     networks:
       - monitoring
@@ -113,7 +113,7 @@ services:
     restart: unless-stopped
 
   promtail:
-    image: grafana/promtail:2.9.4
+    image: grafana/promtail:3.0.0
     container_name: promtail
     volumes:
       - /var/log:/var/log:ro
