@@ -2,31 +2,71 @@ server:
   http_listen_port: 9080
   grpc_listen_port: 0
 
-positions:
+positions: 
   filename: /tmp/positions.yaml
 
 clients:
   - url: http://loki:3100/loki/api/v1/push
 
 scrape_configs:
-  - job_name: docker
-    static_configs:
-      - targets:
-          - localhost
-        labels:
-          job: docker-logs
-          __path__: /var/lib/docker/containers/*/*.log
+  - job_name:  docker
+    docker_sd_configs: 
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+    
+    relabel_configs:
+      # Container name (enlever le "/" au début)
+      - source_labels: ['__meta_docker_container_name']
+        regex: '/(.*)'
+        target_label: 'container_name'
+      
+      # Container ID (12 premiers caractères)
+      - source_labels: ['__meta_docker_container_id']
+        regex: '([a-z0-9]{12}).*'
+        target_label: 'container_id'
+        replacement: '$1'
+      
+      # Image name
+      - source_labels: ['__meta_docker_container_image']
+        target_label: 'image'
+      
+      # Job
+      - replacement: 'docker-logs'
+        target_label:  'job'
+      
+      # Network
+      - source_labels: ['__meta_docker_network_name']
+        target_label:  'network'
+      
+      # Compose service (si disponible)
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_service']
+        target_label:  'compose_service'
+      
+      # Path
+      - source_labels: ['__meta_docker_container_id']
+        target_label: '__path__'
+        replacement: '/var/lib/docker/containers/$1/*.log'
+
     pipeline_stages:
-      - docker: {}
+      - json:
+          expressions:
+            output: log
+            stream: stream
+            time: time
+            attrs:  attrs
+      
+      - json:
+          expressions:
+            tag: attrs.tag
+          source: attrs
+      
       - regex:
-          expression: '/var/lib/docker/containers/(?P<container_id>[^/]+)/(?P<filename>[^/]+)'
-      - labeldrop:
-          - filename
-      - match:
-          selector: '{job="docker-logs"}'
-          stages:
-            - replace:
-                expression: '(?P<name>[a-zA-Z0-9-_]+)-[0-9a-f]{12}\.log'
-                source: filename
-                replace: '${name}'
-                target: container_name
+          expression: '^(?P<image_name>([^|]+))\|(?P<container_name_short>[^|]+)\|(?P<container_id>[^|]+)$'
+          source: tag
+      
+      - timestamp:
+          source: time
+          format: RFC3339Nano
+      
+      - output:
+          source: output
