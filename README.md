@@ -264,7 +264,30 @@ Dashboard principal pour le monitoring des ressources système et containers.
 - **Network** : Trafic réseau par interface
 - **Docker Containers** : CPU, mémoire, réseau par container, table d'état
 
-#### 2. "Docker Logs - Loki Monitoring" ⭐ NOUVEAU
+#### 2. "Docker Containers - Detailed Monitoring"
+Dashboard avancé pour le monitoring détaillé des containers Docker, optimisé pour les environnements multi-container (docker-compose).
+
+**Contenu :**
+- **Overview - Key Metrics** : Métriques clés (Total Containers, Running Containers, Total CPU Usage, Total Memory Usage)
+- **Per Container - CPU & Memory** :
+  - CPU Usage by Container
+  - Memory Usage by Container
+  - Network Traffic by Container
+  - Container Status Table (Container Name, Container Number, Image, Status)
+- **Per Image - Aggregated Metrics** :
+  - Total CPU Usage by Image
+  - Total Memory Usage by Image
+  - Summary by Image (table)
+- **Container Restart Events** : Détection et suivi des redémarrages
+
+**Fonctionnalités :**
+- 🔍 Filtres dynamiques par container, image et host via variables Grafana
+- 📊 Vue simplifiée avec focus sur les métriques essentielles
+- 🐳 Support des labels docker-compose (affichage du numéro de container)
+- 📈 Métriques agrégées par image pour une vue d'ensemble
+- 🎯 Optimisé pour les environnements multi-container
+
+#### 3. "Docker Logs - Loki Monitoring" ⭐ NOUVEAU
 Dashboard dédié à la visualisation des logs Docker via Loki.
 
 **Contenu :**
@@ -307,7 +330,8 @@ sum by (container_name) (count_over_time({container_name=~"$container"}[1m]))
 1. Connectez-vous à Grafana : `http://votre-serveur:3000`
 2. Allez dans **Dashboards** (menu latéral)
 3. Sélectionnez le dashboard souhaité :
-   - "Docker Server Monitoring - Complete" pour les métriques
+   - "Docker Server Monitoring - Complete" pour les métriques système complètes
+   - "Docker Containers - Detailed Monitoring" pour le monitoring détaillé des containers
    - "Docker Logs - Loki Monitoring" pour les logs
 
 ### Créer vos propres dashboards
